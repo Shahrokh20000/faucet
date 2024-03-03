@@ -1,0 +1,160 @@
+<html>
+<head>
+    <title>Faucet Dapp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 20px;
+        }
+        input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 20px;
+        }
+        p {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Faucet Dapp</h1>
+    <p>Claim up to 1000 ETH every 24 hours</p>
+    <button id="connect">Connect Wallet</button>
+    <p id="address"></p>
+    <p id="balance"></p>
+    <input id="amount" type="number" min="1" max="1000" value="1000" />
+    <button id="claim">Claim ETH</button>
+    <p id="status"></p>
+    <script>
+        // Initialize web3 and ethers
+        const web3 = new Web3(window.ethereum);
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+
+        // Define the contract address and ABI
+        const contractAddress = "0xdB8d2299E91cccC74DA1Cf7fC91072862a7E1ade";
+        const contractABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "claim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "lastClaimTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "tokenAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "waitTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+        // Create a contract instance
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        // Get the HTML elements
+        const connectButton = document.getElementById("connect");
+        const addressParagraph = document.getElementById("address");
+        const balanceParagraph = document.getElementById("balance");
+        const amountInput = document.getElementById("amount");
+        const claimButton = document.getElementById("claim");
+        const statusParagraph = document.getElementById("status");
+
+        // Define a function to update the UI with the user's address and balance
+        async function updateUI() {
+            // Get the user's address
+            const address = await signer.getAddress();
+            // Display the address
+            addressParagraph.innerHTML = "Your address: " + address;
+            // Get the user's balance
+            const balance = await provider.getBalance(address);
+            // Convert the balance to ETH and display it
+            balanceParagraph.innerHTML = "Your balance: " + ethers.utils.formatEther(balance) + " ETH";
+        }
+
+        // Define a function to handle the connect button click
+        async function connect() {
+            // Request the user to connect their wallet
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+            // Update the UI with the user's address and balance
+            await updateUI();
+        }
+
+        // Define a function to handle the claim button click
+        async function claim() {
+            // Get the amount of ETH to claim from the input
+            const amount = amountInput.value;
+            // Convert the amount to wei
+            const amountInWei = ethers.utils.parseEther(amount);
+            // Call the claim function of the contract
+            const tx = await contract.claim(amountInWei);
+            // Display the transaction hash
+            statusParagraph.innerHTML = "Transaction sent: " + tx.hash;
+            // Wait for the transaction to be confirmed
+            await tx.wait();
+            // Display the confirmation message
+            statusParagraph.innerHTML = "Transaction confirmed: " + tx.hash;
+            // Update the UI with the user's address and balance
+            await updateUI();
+        }
+
+        // Add event listeners to the buttons
+        connectButton.addEventListener("click", connect);
+        claimButton.addEventListener("click", claim);
+    </script>
+</body>
+</html>
